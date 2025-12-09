@@ -1,10 +1,12 @@
 import { render } from "@testing-library/react";
 import { expect, test, describe } from "vitest";
 import "@testing-library/jest-dom";
-import { BrowserRouter } from "react-router-dom";
-import { Provider } from "@/components/ui/provider";
+import { MemoryRouter } from "react-router-dom";
 
 import App from "../App";
+import * as useAuthModule from "@/hooks/useAuth";
+
+vi.mock("@/hooks/useAuth");
 
 describe("App コンポーネント", () => {
   test("AppRouter が正常にレンダリングされる", () => {

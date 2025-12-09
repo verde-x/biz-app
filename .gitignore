@@ -23,6 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 
+.claude/*
+.serena/*
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
 # env files (all .env files contain secrets)
 .env
 .env*.local

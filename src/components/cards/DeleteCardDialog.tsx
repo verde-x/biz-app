@@ -11,21 +11,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useCard } from "@/hooks/useCard";
-import { CardForm } from "@/components/cards/CardForm";
-import type { Card, CardFormData } from "@/types/card";
-import { Pencil } from "lucide-react";
+import type { Card } from "@/types/card";
+import { Trash2 } from "lucide-react";
 
-interface EditCardDialogProps {
+interface DeleteCardDialogProps {
   card: Card;
   onSuccess?: () => void;
 }
 
-export const EditCardDialog = ({ card, onSuccess }: EditCardDialogProps) => {
+export const DeleteCardDialog = ({
+  card,
+  onSuccess,
+}: DeleteCardDialogProps) => {
   const [open, setOpen] = useState(false);
-  const { updateCard } = useCard();
+  const { deleteCard } = useCard();
 
-  const handleSubmit = async (formData: CardFormData) => {
-    const result = await updateCard(card.id, formData);
+  const handleSubmit = async () => {
+    const result = await deleteCard(card.id);
 
     if (!result.success) {
       alert(`Error: ${result.error?.message}`);
@@ -40,30 +42,21 @@ export const EditCardDialog = ({ card, onSuccess }: EditCardDialogProps) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
-          <Pencil className="size-3.5" />
+          <Trash2 className="size-3.5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Edit Card</DialogTitle>
+          <DialogTitle>Delete Card</DialogTitle>
           <DialogDescription>
-            Edit business card here. Click save when you're done.
+            Are you sure you want to delete this business card?
           </DialogDescription>
         </DialogHeader>
-
-        <CardForm
-          id="edit-card-form"
-          onSubmit={handleSubmit}
-          initialData={card}
-        />
-
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button type="submit" form="edit-card-form">
-            Save changes
-          </Button>
+          <Button onClick={handleSubmit}>Delete</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

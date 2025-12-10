@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { AddCardDialog } from "@/components/cards/AddCardDialog";
 import { EditCardDialog } from "@/components/cards/EditCardDialog";
+import { DeleteCardDialog } from "@/components/cards/DeleteCardDialog";
 
 export const CardList = () => {
   const { cards, loading, error, refetch } = useCard();
@@ -69,6 +70,7 @@ export const CardList = () => {
                 <TableCell>{card.email}</TableCell>
                 <TableCell>
                   <EditCardDialog card={card} onSuccess={refetch} />
+                  <DeleteCardDialog card={card} onSuccess={refetch} />
                 </TableCell>
               </TableRow>
             ))}

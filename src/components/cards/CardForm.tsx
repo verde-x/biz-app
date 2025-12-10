@@ -50,7 +50,7 @@ export const CardForm = ({ onSubmit, initialData, id }: CardFormProps) => {
 
   return (
     <form id={id} onSubmit={handleSubmit}>
-      <div className="grid gap-3 my-6">
+      <div className="grid gap-3 my-4">
         <div className="grid grid-cols-4 gap-4">
           <div className="grid gap-1">
             <Label htmlFor="last_name">Last Name</Label>
@@ -109,28 +109,6 @@ export const CardForm = ({ onSubmit, initialData, id }: CardFormProps) => {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-1">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              data-1p-ignore
-            />
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor="url">URL</Label>
-            <Input
-              id="url"
-              name="url"
-              value={formData.url}
-              onChange={handleChange}
-              data-1p-ignore
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="grid gap-1">
             <Label htmlFor="phone1">Phone 1</Label>
             <Input
               id="phone1"
@@ -146,6 +124,28 @@ export const CardForm = ({ onSubmit, initialData, id }: CardFormProps) => {
               id="phone2"
               name="phone2"
               value={formData.phone2}
+              onChange={handleChange}
+              data-1p-ignore
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-1">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              data-1p-ignore
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="url">URL</Label>
+            <Input
+              id="url"
+              name="url"
+              value={formData.url}
               onChange={handleChange}
               data-1p-ignore
             />

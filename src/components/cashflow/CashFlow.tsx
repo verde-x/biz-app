@@ -1,295 +1,227 @@
-import { useState } from "react";
+import { useCashFlow } from "@/hooks/useCashFlow";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "../ui/card";
 import { Label } from "@/components/ui/label";
 import { NumericInput } from "@/components/ui/numeric-input";
-// import { useCard } from "@/hooks/useCard";
-
-const normalizeZero = (value: number): number => {
-  return value === 0 ? 0 : value;
-};
+import { normalizeZero, getValueColorClass } from "@/utils/formatters";
 
 export const CashFlowInput = () => {
-  // const { cards, loading, error, refetch } = useCard();
+  const { user } = useAuth();
+  const userId = user?.id;
 
-  // 流動資産
-  const [currentAssets, setCurrentAssets] = useState({
-    cash_prev: 0, // 現預金（前期）
-    cash_current: 0, // 現預金（当期）
-    receivables_prev: 0, // 売掛金＋受取手形（前期）
-    receivables_current: 0, // 売掛金＋受取手形（当期）
-    inventory_prev: 0, // 棚卸資産（前期）
-    inventory_current: 0, // 棚卸資産（当期）
-    securities_prev: 0, // 有価証券（前期）
-    securities_current: 0, // 有価証券（当期）
-    shortTermLoans_prev: 0, // 短期貸付金（前期）
-    shortTermLoans_current: 0, // 短期貸付金（当期）
-    deferredTaxAssets_prev: 0, // 繰越税金資産（前期）
-    deferredTaxAssets_current: 0, // 繰越税金資産（当期）
-    otherCurrentAssets_prev: 0, // その他流動資産（前期）
-    otherCurrentAssets_current: 0, // その他流動資産（当期）
-  });
+  const {
+    currentAssets,
+    fixedAssets,
+    deferredAssets,
+    currentLiabilities,
+    fixedLiabilities,
+    equity,
+    incomeStatement,
+    appropriation,
+    updateCurrentAssets,
+    updateFixedAssets,
+    updateDeferredAssets,
+    updateCurrentLiabilities,
+    updateFixedLiabilities,
+    updateEquity,
+    updateIncomeStatement,
+    updateAppropriation,
+    loading,
+    error,
+  } = useCashFlow(userId);
 
-  const totalCurrentAssetsPrev =
-    (currentAssets.cash_prev || 0) +
-    (currentAssets.receivables_prev || 0) +
-    (currentAssets.inventory_prev || 0) +
-    (currentAssets.securities_prev || 0) +
-    (currentAssets.shortTermLoans_prev || 0) +
-    (currentAssets.deferredTaxAssets_prev || 0) +
-    (currentAssets.otherCurrentAssets_prev || 0);
+  // 流動資産計
+  const totalCurrentAssets = {
+    prev:
+      (currentAssets.prev.cash || 0) +
+      (currentAssets.prev.receivables || 0) +
+      (currentAssets.prev.inventory || 0) +
+      (currentAssets.prev.securities || 0) +
+      (currentAssets.prev.shortTermLoans || 0) +
+      (currentAssets.prev.deferredTaxAssets || 0) +
+      (currentAssets.prev.otherCurrentAssets || 0),
+    current:
+      (currentAssets.current.cash || 0) +
+      (currentAssets.current.receivables || 0) +
+      (currentAssets.current.inventory || 0) +
+      (currentAssets.current.securities || 0) +
+      (currentAssets.current.shortTermLoans || 0) +
+      (currentAssets.current.deferredTaxAssets || 0) +
+      (currentAssets.current.otherCurrentAssets || 0),
+  };
 
-  const totalCurrentAssetsCurrent =
-    (currentAssets.cash_current || 0) +
-    (currentAssets.receivables_current || 0) +
-    (currentAssets.inventory_current || 0) +
-    (currentAssets.securities_current || 0) +
-    (currentAssets.shortTermLoans_current || 0) +
-    (currentAssets.deferredTaxAssets_current || 0) +
-    (currentAssets.otherCurrentAssets_current || 0);
-
-  // 固定資産
-  const [fixedAssets, setFixedAssets] = useState({
-    tangibleAssets_prev: 0, // 有形固定資産（前期）
-    tangibleAssets_current: 0, // 有形固定資産（当期）
-    intangibleAssets_prev: 0, // 無形固定資産（前期）
-    intangibleAssets_current: 0, // 無形固定資産（当期）
-    investmentSecurities_prev: 0, // 投資有価証券（前期）
-    investmentSecurities_current: 0, // 投資有価証券（当期）
-    longTermLoans_prev: 0, // 長期貸付金（前期）
-    longTermLoans_current: 0, // 長期貸付金（当期）
-    deferredTaxAssets_prev: 0, // 繰越税金資産（前期）
-    deferredTaxAssets_current: 0, // 繰越税金資産（当期）
-    otherFixedAssets_prev: 0, // その他固定資産（前期）
-    otherFixedAssets_current: 0, // その他固定資産（当期）
-  });
-
-  const totalFixedAssetsPrev =
-    (fixedAssets.tangibleAssets_prev || 0) +
-    (fixedAssets.intangibleAssets_prev || 0) +
-    (fixedAssets.investmentSecurities_prev || 0) +
-    (fixedAssets.longTermLoans_prev || 0) +
-    (fixedAssets.otherFixedAssets_prev || 0) +
-    (fixedAssets.deferredTaxAssets_prev || 0);
-
-  const totalFixedAssetsCurrent =
-    (fixedAssets.tangibleAssets_current || 0) +
-    (fixedAssets.intangibleAssets_current || 0) +
-    (fixedAssets.investmentSecurities_current || 0) +
-    (fixedAssets.longTermLoans_current || 0) +
-    (fixedAssets.otherFixedAssets_current || 0) +
-    (fixedAssets.deferredTaxAssets_current || 0);
-
-  // 繰延資産
-  const [deferredAssets, setDeferredAssets] = useState({
-    deferredAssets_prev: 0,
-    deferredAssets_current: 0,
-  });
+  // 固定資産計
+  const totalFixedAssets = {
+    prev:
+      (fixedAssets.prev.tangibleAssets || 0) +
+      (fixedAssets.prev.intangibleAssets || 0) +
+      (fixedAssets.prev.investmentSecurities || 0) +
+      (fixedAssets.prev.longTermLoans || 0) +
+      (fixedAssets.prev.otherFixedAssets || 0) +
+      (fixedAssets.prev.deferredTaxAssets || 0),
+    current:
+      (fixedAssets.current.tangibleAssets || 0) +
+      (fixedAssets.current.intangibleAssets || 0) +
+      (fixedAssets.current.investmentSecurities || 0) +
+      (fixedAssets.current.longTermLoans || 0) +
+      (fixedAssets.current.otherFixedAssets || 0) +
+      (fixedAssets.current.deferredTaxAssets || 0),
+  };
 
   // 資産合計
   const totalAssetsPrev =
-    totalCurrentAssetsPrev +
-    totalFixedAssetsPrev +
-    (deferredAssets.deferredAssets_prev || 0);
+    totalCurrentAssets.prev +
+    totalFixedAssets.prev +
+    (deferredAssets.prev.deferredAssets || 0);
 
   const totalAssetsCurrent =
-    totalCurrentAssetsCurrent +
-    totalFixedAssetsCurrent +
-    (deferredAssets.deferredAssets_current || 0);
+    totalCurrentAssets.current +
+    totalFixedAssets.current +
+    (deferredAssets.current.deferredAssets || 0);
 
-  // 流動負債
-  const [currentLiabilities, setCurrentLiabilities] = useState({
-    accountsPayable_prev: 0, // 買掛金＋支払手形（前期）
-    accountsPayable_current: 0, // 買掛金＋支払手形（当期）
-    shortTermBorrowings_prev: 0, // 短期借入金（前期）
-    shortTermBorrowings_current: 0, // 短期借入金（当期）
-    incomeTaxPayable_prev: 0, // 未払法人税（前期）
-    incomeTaxPayable_current: 0, // 未払法人税（当期）
-    deferredTaxLiabilities_prev: 0, // 繰延税金負債（前期）
-    deferredTaxLiabilities_current: 0, // 繰延税金負債（当期）
-    bonusReserve_prev: 0, // 賞与引当金（前期）
-    bonusReserve_current: 0, // 賞与引当金（当期）
-    retirementBenefits_prev: 0, // 退職給付引当金（前期）
-    retirementBenefits_current: 0, // 退職給付引当金（当期）
-    otherCurrentLiabilities_prev: 0, // その他の流動負債（前期）
-    otherCurrentLiabilities_current: 0, // その他の流動負債（当期）
-  });
+  // 流動負債計
+  const totalCurrentLiabilities = {
+    prev:
+      (currentLiabilities.prev.accountsPayable || 0) +
+      (currentLiabilities.prev.shortTermBorrowings || 0) +
+      (currentLiabilities.prev.incomeTaxPayable || 0) +
+      (currentLiabilities.prev.deferredTaxLiabilities || 0) +
+      (currentLiabilities.prev.bonusReserve || 0) +
+      (currentLiabilities.prev.retirementBenefits || 0) +
+      (currentLiabilities.prev.otherCurrentLiabilities || 0),
 
-  const totalCurrentLiabilitiesPrev =
-    (currentLiabilities.accountsPayable_prev || 0) +
-    (currentLiabilities.shortTermBorrowings_prev || 0) +
-    (currentLiabilities.incomeTaxPayable_prev || 0) +
-    (currentLiabilities.deferredTaxLiabilities_prev || 0) +
-    (currentLiabilities.bonusReserve_prev || 0) +
-    (currentLiabilities.retirementBenefits_prev || 0) +
-    (currentLiabilities.otherCurrentLiabilities_prev || 0);
+    current:
+      (currentLiabilities.current.accountsPayable || 0) +
+      (currentLiabilities.current.shortTermBorrowings || 0) +
+      (currentLiabilities.current.incomeTaxPayable || 0) +
+      (currentLiabilities.current.deferredTaxLiabilities || 0) +
+      (currentLiabilities.current.bonusReserve || 0) +
+      (currentLiabilities.current.retirementBenefits || 0) +
+      (currentLiabilities.current.otherCurrentLiabilities || 0),
+  };
 
-  const totalCurrentLiabilitiesCurrent =
-    (currentLiabilities.accountsPayable_current || 0) +
-    (currentLiabilities.shortTermBorrowings_current || 0) +
-    (currentLiabilities.incomeTaxPayable_current || 0) +
-    (currentLiabilities.deferredTaxLiabilities_current || 0) +
-    (currentLiabilities.bonusReserve_current || 0) +
-    (currentLiabilities.retirementBenefits_current || 0) +
-    (currentLiabilities.otherCurrentLiabilities_current || 0);
-
-  // 固定負債
-  const [fixedLiabilities, setFixedLiabilities] = useState({
-    longTermBorrowings_prev: 0, // 長期借入金・社債（前期)
-    longTermBorrowings_current: 0, // 長期借入金・社債（当期)
-    deferredTaxLiabilities_prev: 0, // 繰延税金負債（前期)
-    deferredTaxLiabilities_current: 0, // 繰延税金負債（当期)
-    retirementBenefits_prev: 0, // 退職給引当金（前期)
-    retirementBenefits_current: 0, // 退職給引当金（当期)
-    otherFixedLiabilities_prev: 0, // その他の固定負債（前期)
-    otherFixedLiabilities_current: 0, // その他の固定負債（当期)
-  });
-
+  // 固定負債計
   const totalFixedLiabilitiesPrev =
-    (fixedLiabilities.longTermBorrowings_prev || 0) +
-    (fixedLiabilities.deferredTaxLiabilities_prev || 0) +
-    (fixedLiabilities.retirementBenefits_prev || 0) +
-    (fixedLiabilities.otherFixedLiabilities_prev || 0);
+    (fixedLiabilities.prev.longTermBorrowings || 0) +
+    (fixedLiabilities.prev.deferredTaxLiabilities || 0) +
+    (fixedLiabilities.prev.retirementBenefits || 0) +
+    (fixedLiabilities.prev.otherFixedLiabilities || 0);
 
   const totalFixedLiabilitiesCurrent =
-    (fixedLiabilities.longTermBorrowings_current || 0) +
-    (fixedLiabilities.deferredTaxLiabilities_current || 0) +
-    (fixedLiabilities.retirementBenefits_current || 0) +
-    (fixedLiabilities.otherFixedLiabilities_current || 0);
+    (fixedLiabilities.current.longTermBorrowings || 0) +
+    (fixedLiabilities.current.deferredTaxLiabilities || 0) +
+    (fixedLiabilities.current.retirementBenefits || 0) +
+    (fixedLiabilities.current.otherFixedLiabilities || 0);
 
   // 負債合計
-  const totalLiabilitiesPrev =
-    totalCurrentLiabilitiesPrev + totalFixedLiabilitiesPrev;
-  const totalLiabilitiesCurrent =
-    totalCurrentLiabilitiesCurrent + totalFixedLiabilitiesCurrent;
+  const totalLiabilities = {
+    prev: totalCurrentLiabilities.prev + totalFixedLiabilitiesPrev,
+    current: totalCurrentLiabilities.current + totalFixedLiabilitiesCurrent,
+  };
 
-  // 資本の部
-  const [equity, setEquity] = useState({
-    capitalStock_prev: 0, // 資本金（前期）
-    capitalStock_current: 0, // 資本金（当期）
-    retainedEarnings_prev: 0, // 利益剰余金（前期）
-    retainedEarnings_current: 0, // 利益剰余金（当期）
-    treasuryStock_prev: 0, // 繰越ヘッジ損益（前期）
-    treasuryStock_current: 0, // 繰越ヘッジ損益（当期）
-  });
-
-  const totalEquityPrev =
-    (equity.capitalStock_prev || 0) +
-    (equity.retainedEarnings_prev || 0) +
-    (equity.treasuryStock_prev || 0);
-
-  const totalEquityCurrent =
-    (equity.capitalStock_current || 0) +
-    (equity.retainedEarnings_current || 0) +
-    (equity.treasuryStock_current || 0);
+  // 資本合計
+  const totalEquity = {
+    prev:
+      (equity.prev.capitalStock || 0) +
+      (equity.prev.retainedEarnings || 0) +
+      (equity.prev.treasuryStock || 0),
+    current:
+      (equity.current.capitalStock || 0) +
+      (equity.current.retainedEarnings || 0) +
+      (equity.current.treasuryStock || 0),
+  };
 
   // 負債･資本合計
-  const totalLiabilitiesAndEquityPrev = totalLiabilitiesPrev + totalEquityPrev;
-  const totalLiabilitiesAndEquityCurrent =
-    totalLiabilitiesCurrent + totalEquityCurrent;
+  const totalLiabilitiesAndEquity = {
+    prev: totalLiabilities.prev + totalEquity.prev,
+    current: totalLiabilities.current + totalEquity.current,
+  };
 
   // バランスチェック
-  const isBalancedPrev = totalAssetsPrev === totalLiabilitiesAndEquityPrev;
-  const isBalancedCurrent =
-    totalAssetsCurrent === totalLiabilitiesAndEquityCurrent;
-
-  // 損益計算書
-  const [incomeStatement, setIncomeStatement] = useState({
-    pretaxIncome: 0, // 税引前当期純利益
-    netIncome: 0, // 税引後当期純利益
-    depreciation: 0, // 減価償却費
-    interestIncome: 0, // 受取利息・配当金
-    interestExpense: 0, // 支払利息
-    securitiesGain: 0, // 有価証券売却益
-    securitiesLoss: 0, // 有価証券売却損・評価損
-    fixedAssetGain: 0, // 固定資産売却益
-    fixedAssetLoss: 0, // 固定資産売却損及び廃棄損
-  });
-
-  // 利益処分
-  const [appropriation, setAppropriation] = useState({
-    dividends: 0, // 配当金の当期支出額
-    executiveBonuses: 0, // 役員賞与の当期支出額
-  });
+  const isBalanced = {
+    prev: totalAssetsPrev === totalLiabilitiesAndEquity.prev,
+    current: totalAssetsCurrent === totalLiabilitiesAndEquity.current,
+  };
 
   // キャッシュフロー計算書
 
   // 退職給引当金
   const retirementBenefitsChange = normalizeZero(
-    currentLiabilities.retirementBenefits_current -
-      currentLiabilities.retirementBenefits_prev +
-      (fixedLiabilities.retirementBenefits_current -
-        fixedLiabilities.retirementBenefits_prev)
+    currentLiabilities.current.retirementBenefits -
+      currentLiabilities.prev.retirementBenefits +
+      (fixedLiabilities.current.retirementBenefits -
+        fixedLiabilities.prev.retirementBenefits)
   );
 
   // 賞与引当金
   const bonusReserveChange = normalizeZero(
-    currentLiabilities.bonusReserve_current -
-      currentLiabilities.bonusReserve_prev
+    currentLiabilities.current.bonusReserve -
+      currentLiabilities.prev.bonusReserve
   );
 
   // 受取利息・受取配当金
-  const interestIncome = normalizeZero(incomeStatement.interestIncome * -1);
+  const interestIncome = normalizeZero(-incomeStatement.interestIncome);
 
   // 有価証券売却損益･評価損
-  const securities = normalizeZero(
+  const securitiesGainLoss = normalizeZero(
     incomeStatement.securitiesLoss - incomeStatement.securitiesGain
   );
 
   // 固定資産売却損益･廃棄損
-  const fixedAsset = normalizeZero(
+  const fixedAssetGainLoss = normalizeZero(
     incomeStatement.fixedAssetLoss - incomeStatement.fixedAssetGain
   );
 
   // 繰越ヘッジ損益の増減
   const treasuryStockChange = normalizeZero(
-    equity.treasuryStock_current - equity.treasuryStock_prev
+    equity.current.treasuryStock - equity.prev.treasuryStock
   );
 
   // 売上債権減少（△増加）
   const receivablesChange = normalizeZero(
-    -(currentAssets.receivables_current - currentAssets.receivables_prev)
+    -(currentAssets.current.receivables - currentAssets.prev.receivables)
   );
 
   // 棚卸資産減少（△増加）
   const inventoryChange = normalizeZero(
-    -(currentAssets.inventory_current - currentAssets.inventory_prev)
+    -(currentAssets.current.inventory - currentAssets.prev.inventory)
   );
 
   // その他流動資産減少（△増加）
   const otherCurrentAssetsChange = normalizeZero(
     -(
-      currentAssets.otherCurrentAssets_current -
-      currentAssets.otherCurrentAssets_prev
+      currentAssets.current.otherCurrentAssets -
+      currentAssets.prev.otherCurrentAssets
     )
   );
 
   // 繰延資産減少（△増加）
   const deferredAssetsChange = normalizeZero(
     -(
-      deferredAssets.deferredAssets_current - deferredAssets.deferredAssets_prev
+      deferredAssets.current.deferredAssets - deferredAssets.prev.deferredAssets
     )
   );
 
   // 仕入債務増加（△減少）
   const accountsPayableChange = normalizeZero(
-    currentLiabilities.accountsPayable_current -
-      currentLiabilities.accountsPayable_prev
+    currentLiabilities.current.accountsPayable -
+      currentLiabilities.prev.accountsPayable
   );
 
   // その他流動負債増加（△減少）
   const otherCurrentLiabilitiesChange = normalizeZero(
-    currentLiabilities.otherCurrentLiabilities_current -
-      currentLiabilities.otherCurrentLiabilities_prev
+    currentLiabilities.current.otherCurrentLiabilities -
+      currentLiabilities.prev.otherCurrentLiabilities
   );
 
   // その他固定負債増加（△減少）
   const otherFixedLiabilitiesChange = normalizeZero(
-    fixedLiabilities.otherFixedLiabilities_current -
-      fixedLiabilities.otherFixedLiabilities_prev
+    fixedLiabilities.current.otherFixedLiabilities -
+      fixedLiabilities.prev.otherFixedLiabilities
   );
 
   // 役員賞与
-  const executiveBonuses = normalizeZero(appropriation.executiveBonuses * -1);
+  const executiveBonuses = normalizeZero(-appropriation.executiveBonuses);
 
   // 営業活動CF 小計1
   const operatingSubtotal1 =
@@ -299,8 +231,8 @@ export const CashFlowInput = () => {
     bonusReserveChange +
     interestIncome +
     incomeStatement.interestExpense +
-    securities +
-    fixedAsset +
+    securitiesGainLoss +
+    fixedAssetGainLoss +
     treasuryStockChange +
     receivablesChange +
     inventoryChange +
@@ -312,22 +244,22 @@ export const CashFlowInput = () => {
     executiveBonuses;
 
   // 支払利息
-  const interestExpense = normalizeZero(incomeStatement.interestExpense * -1);
+  const interestExpense = normalizeZero(-incomeStatement.interestExpense);
 
   // 法人税等の支払額
   const incomeTaxesPaid = normalizeZero(
     incomeStatement.netIncome -
       incomeStatement.pretaxIncome -
-      (currentAssets.deferredTaxAssets_current -
-        currentAssets.deferredTaxAssets_prev) -
-      (fixedAssets.deferredTaxAssets_current -
-        fixedAssets.deferredTaxAssets_prev) +
-      (currentLiabilities.deferredTaxLiabilities_current -
-        currentLiabilities.deferredTaxLiabilities_prev) +
-      (fixedLiabilities.deferredTaxLiabilities_current -
-        fixedLiabilities.deferredTaxLiabilities_prev) +
-      (currentLiabilities.incomeTaxPayable_current -
-        currentLiabilities.incomeTaxPayable_prev)
+      (currentAssets.current.deferredTaxAssets -
+        currentAssets.prev.deferredTaxAssets) -
+      (fixedAssets.current.deferredTaxAssets -
+        fixedAssets.prev.deferredTaxAssets) +
+      (currentLiabilities.current.deferredTaxLiabilities -
+        currentLiabilities.prev.deferredTaxLiabilities) +
+      (fixedLiabilities.current.deferredTaxLiabilities -
+        fixedLiabilities.prev.deferredTaxLiabilities) +
+      (currentLiabilities.current.incomeTaxPayable -
+        currentLiabilities.prev.incomeTaxPayable)
   );
 
   // 営業活動CF 小計2
@@ -342,7 +274,7 @@ export const CashFlowInput = () => {
 
   // 有形固定資産の減少（△増加）
   const tangibleAssetsChange = normalizeZero(
-    -(fixedAssets.tangibleAssets_current - fixedAssets.tangibleAssets_prev) +
+    -(fixedAssets.current.tangibleAssets - fixedAssets.prev.tangibleAssets) +
       incomeStatement.fixedAssetGain -
       incomeStatement.fixedAssetLoss -
       incomeStatement.depreciation
@@ -350,14 +282,14 @@ export const CashFlowInput = () => {
 
   // 無形固定資産の減少（△増加）
   const intangibleAssetsChange = normalizeZero(
-    -(fixedAssets.intangibleAssets_current - fixedAssets.intangibleAssets_prev)
+    -(fixedAssets.current.intangibleAssets - fixedAssets.prev.intangibleAssets)
   );
 
   // 有価証券の減少（△増加）
   const securitiesChange = normalizeZero(
-    -(currentAssets.securities_current - currentAssets.securities_prev) -
-      (fixedAssets.investmentSecurities_current -
-        fixedAssets.investmentSecurities_prev) +
+    -(currentAssets.current.securities - currentAssets.prev.securities) -
+      (fixedAssets.current.investmentSecurities -
+        fixedAssets.prev.investmentSecurities) +
       incomeStatement.securitiesGain -
       incomeStatement.securitiesLoss
   );
@@ -365,14 +297,14 @@ export const CashFlowInput = () => {
   // 貸付金の減少（△増加）
   const loansChange = normalizeZero(
     -(
-      currentAssets.shortTermLoans_current - currentAssets.shortTermLoans_prev
+      currentAssets.current.shortTermLoans - currentAssets.prev.shortTermLoans
     ) -
-      (fixedAssets.longTermLoans_current - fixedAssets.longTermLoans_prev)
+      (fixedAssets.current.longTermLoans - fixedAssets.prev.longTermLoans)
   );
 
   // その他固定資産の減少（△増加）
   const otherFixedAssetsChange = normalizeZero(
-    -(fixedAssets.otherFixedAssets_current - fixedAssets.otherFixedAssets_prev)
+    -(fixedAssets.current.otherFixedAssets - fixedAssets.prev.otherFixedAssets)
   );
 
   // 投資活動によるCF
@@ -386,19 +318,19 @@ export const CashFlowInput = () => {
 
   // 短期借入金の増加（△減少）
   const shortTermBorrowingsChange = normalizeZero(
-    currentLiabilities.shortTermBorrowings_current -
-      currentLiabilities.shortTermBorrowings_prev
+    currentLiabilities.current.shortTermBorrowings -
+      currentLiabilities.prev.shortTermBorrowings
   );
 
   // 長期借入金･社債の増加（△減少）
   const longTermBorrowingsChange = normalizeZero(
-    fixedLiabilities.longTermBorrowings_current -
-      fixedLiabilities.longTermBorrowings_prev
+    fixedLiabilities.current.longTermBorrowings -
+      fixedLiabilities.prev.longTermBorrowings
   );
 
   // 増資
   const capitalIncrease = normalizeZero(
-    equity.capitalStock_current - equity.capitalStock_prev
+    equity.current.capitalStock - equity.prev.capitalStock
   );
 
   // 支払配当金
@@ -414,32 +346,32 @@ export const CashFlowInput = () => {
 
   // 現預金残高の増加（△減少）
   const cashIncrease = normalizeZero(
-    currentAssets.cash_current - currentAssets.cash_prev
+    currentAssets.current.cash - currentAssets.prev.cash
   );
 
   // CF合計チェック
   const isCashFlowBalanced =
     cashIncrease === totalOperatingCF + totalInvestingCF + totalFinancingCF;
 
-  // if (loading) {
-  //   return (
-  //     <Card className="p-6">
-  //       <div className="flex items-center justify-center h-32">
-  //         <p>Loading...</p>
-  //       </div>
-  //     </Card>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center h-32">
+          <p>Loading...</p>
+        </div>
+      </Card>
+    );
+  }
 
-  // if (error) {
-  //   return (
-  //     <Card className="p-6">
-  //       <div className="flex items-center justify-center h-32">
-  //         <p className="text-red-500">Error: {error.message}</p>
-  //       </div>
-  //     </Card>
-  //   );
-  // }
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center h-32">
+          <p className="text-red-500">Error: {error.message}</p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -465,21 +397,21 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">現預金</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.cash_prev}
+                  value={currentAssets.prev.cash || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      cash_prev: value || 0,
+                      prev: { ...prev.prev, cash: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.cash_current}
+                  value={currentAssets.current.cash || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      cash_current: value || 0,
+                      current: { ...prev.current, cash: value || 0 },
                     }))
                   }
                 />
@@ -488,21 +420,21 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">売掛金＋受取手形</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.receivables_prev}
+                  value={currentAssets.prev.receivables || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      receivables_prev: value || 0,
+                      prev: { ...prev.prev, receivables: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.receivables_current}
+                  value={currentAssets.current.receivables || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      receivables_current: value || 0,
+                      current: { ...prev.current, receivables: value || 0 },
                     }))
                   }
                 />
@@ -511,21 +443,21 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">棚卸資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.inventory_prev}
+                  value={currentAssets.prev.inventory || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      inventory_prev: value || 0,
+                      prev: { ...prev.prev, inventory: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.inventory_current}
+                  value={currentAssets.current.inventory || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      inventory_current: value || 0,
+                      current: { ...prev.current, inventory: value || 0 },
                     }))
                   }
                 />
@@ -534,21 +466,21 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">有価証券</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.securities_prev}
+                  value={currentAssets.prev.securities || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      securities_prev: value || 0,
+                      prev: { ...prev.prev, securities: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.securities_current}
+                  value={currentAssets.current.securities || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      securities_current: value || 0,
+                      current: { ...prev.current, securities: value || 0 },
                     }))
                   }
                 />
@@ -557,21 +489,21 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">短期貸付金</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.shortTermLoans_prev}
+                  value={currentAssets.prev.shortTermLoans || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      shortTermLoans_prev: value || 0,
+                      prev: { ...prev.prev, shortTermLoans: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.shortTermLoans_current}
+                  value={currentAssets.current.shortTermLoans || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      shortTermLoans_current: value || 0,
+                      current: { ...prev.current, shortTermLoans: value || 0 },
                     }))
                   }
                 />
@@ -580,21 +512,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">繰延税金資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.deferredTaxAssets_prev}
+                  value={currentAssets.prev.deferredTaxAssets || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      deferredTaxAssets_prev: value || 0,
+                      prev: { ...prev.prev, deferredTaxAssets: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.deferredTaxAssets_current}
+                  value={currentAssets.current.deferredTaxAssets || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      deferredTaxAssets_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        deferredTaxAssets: value || 0,
+                      },
                     }))
                   }
                 />
@@ -603,21 +538,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">その他流動資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.otherCurrentAssets_prev}
+                  value={currentAssets.prev.otherCurrentAssets || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      otherCurrentAssets_prev: value || 0,
+                      prev: { ...prev.prev, otherCurrentAssets: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentAssets.otherCurrentAssets_current}
+                  value={currentAssets.current.otherCurrentAssets || undefined}
                   onValueChange={(value) =>
-                    setCurrentAssets((prev) => ({
+                    updateCurrentAssets((prev) => ({
                       ...prev,
-                      otherCurrentAssets_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        otherCurrentAssets: value || 0,
+                      },
                     }))
                   }
                 />
@@ -625,10 +563,10 @@ export const CashFlowInput = () => {
               <div className="grid grid-cols-3 gap-4 items-center ps-2 font-semibold">
                 <Label className="text-sm">流動資産計</Label>
                 <div className="text-right py-2 px-3">
-                  {totalCurrentAssetsPrev.toLocaleString()}
+                  {totalCurrentAssets.prev.toLocaleString()}
                 </div>
                 <div className="text-right py-2 px-3">
-                  {totalCurrentAssetsCurrent.toLocaleString()}
+                  {totalCurrentAssets.current.toLocaleString()}
                 </div>
               </div>
               <hr className="mt-8" />
@@ -642,21 +580,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">有形固定資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.tangibleAssets_prev}
+                  value={fixedAssets.prev.tangibleAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      tangibleAssets_prev: value || 0,
+                      prev: { ...prev.prev, tangibleAssets: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.tangibleAssets_current}
+                  value={fixedAssets.current.tangibleAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      tangibleAssets_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        tangibleAssets: value || 0,
+                      },
                     }))
                   }
                 />
@@ -665,21 +606,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">無形固定資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.intangibleAssets_prev}
+                  value={fixedAssets.prev.intangibleAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      intangibleAssets_prev: value || 0,
+                      prev: { ...prev.prev, intangibleAssets: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.intangibleAssets_current}
+                  value={fixedAssets.current.intangibleAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      intangibleAssets_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        intangibleAssets: value || 0,
+                      },
                     }))
                   }
                 />
@@ -688,21 +632,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">投資有価証券</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.investmentSecurities_prev}
+                  value={fixedAssets.prev.investmentSecurities || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      investmentSecurities_prev: value || 0,
+                      prev: { ...prev.prev, investmentSecurities: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.investmentSecurities_current}
+                  value={fixedAssets.current.investmentSecurities || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      investmentSecurities_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        investmentSecurities: value || 0,
+                      },
                     }))
                   }
                 />
@@ -711,21 +658,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">長期貸付金</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.longTermLoans_prev}
+                  value={fixedAssets.prev.longTermLoans || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      longTermLoans_prev: value || 0,
+                      prev: { ...prev.prev, longTermLoans: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.longTermLoans_current}
+                  value={fixedAssets.current.longTermLoans || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      longTermLoans_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        longTermLoans: value || 0,
+                      },
                     }))
                   }
                 />
@@ -734,21 +684,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">繰延税金資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.deferredTaxAssets_prev}
+                  value={fixedAssets.prev.deferredTaxAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      deferredTaxAssets_prev: value || 0,
+                      prev: { ...prev.prev, deferredTaxAssets: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.deferredTaxAssets_current}
+                  value={fixedAssets.current.deferredTaxAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      deferredTaxAssets_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        deferredTaxAssets: value || 0,
+                      },
                     }))
                   }
                 />
@@ -757,21 +710,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">その他固定資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.otherFixedAssets_prev}
+                  value={fixedAssets.prev.otherFixedAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      otherFixedAssets_prev: value || 0,
+                      prev: { ...prev.prev, otherFixedAssets: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedAssets.otherFixedAssets_current}
+                  value={fixedAssets.current.otherFixedAssets || undefined}
                   onValueChange={(value) =>
-                    setFixedAssets((prev) => ({
+                    updateFixedAssets((prev) => ({
                       ...prev,
-                      otherFixedAssets_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        otherFixedAssets: value || 0,
+                      },
                     }))
                   }
                 />
@@ -779,10 +735,10 @@ export const CashFlowInput = () => {
               <div className="grid grid-cols-3 gap-4 items-center ps-2 font-semibold">
                 <Label className="text-sm">固定資産計</Label>
                 <div className="text-right py-2 px-3">
-                  {totalFixedAssetsPrev.toLocaleString()}
+                  {totalFixedAssets.prev.toLocaleString()}
                 </div>
                 <div className="text-right py-2 px-3">
-                  {totalFixedAssetsCurrent.toLocaleString()}
+                  {totalFixedAssets.current.toLocaleString()}
                 </div>
               </div>
               <hr className="mt-8" />
@@ -796,21 +752,24 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">繰延資産</Label>
                 <NumericInput
                   className="text-right"
-                  value={deferredAssets.deferredAssets_prev}
+                  value={deferredAssets.prev.deferredAssets || undefined}
                   onValueChange={(value) =>
-                    setDeferredAssets((prev) => ({
+                    updateDeferredAssets((prev) => ({
                       ...prev,
-                      deferredAssets_prev: value || 0,
+                      prev: { ...prev.prev, deferredAssets: value || 0 },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={deferredAssets.deferredAssets_current}
+                  value={deferredAssets.current.deferredAssets || undefined}
                   onValueChange={(value) =>
-                    setDeferredAssets((prev) => ({
+                    updateDeferredAssets((prev) => ({
                       ...prev,
-                      deferredAssets_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        deferredAssets: value || 0,
+                      },
                     }))
                   }
                 />
@@ -838,21 +797,29 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">買掛金＋支払手形</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.accountsPayable_prev}
+                  value={currentLiabilities.prev.accountsPayable || undefined}
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      accountsPayable_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        accountsPayable: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.accountsPayable_current}
+                  value={
+                    currentLiabilities.current.accountsPayable || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      accountsPayable_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        accountsPayable: value || 0,
+                      },
                     }))
                   }
                 />
@@ -861,21 +828,31 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">短期借入金</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.shortTermBorrowings_prev}
+                  value={
+                    currentLiabilities.prev.shortTermBorrowings || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      shortTermBorrowings_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        shortTermBorrowings: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.shortTermBorrowings_current}
+                  value={
+                    currentLiabilities.current.shortTermBorrowings || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      shortTermBorrowings_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        shortTermBorrowings: value || 0,
+                      },
                     }))
                   }
                 />
@@ -884,21 +861,29 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">未払法人税等</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.incomeTaxPayable_prev}
+                  value={currentLiabilities.prev.incomeTaxPayable || undefined}
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      incomeTaxPayable_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        incomeTaxPayable: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.incomeTaxPayable_current}
+                  value={
+                    currentLiabilities.current.incomeTaxPayable || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      incomeTaxPayable_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        incomeTaxPayable: value || 0,
+                      },
                     }))
                   }
                 />
@@ -907,21 +892,32 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">繰延税金負債</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.deferredTaxLiabilities_prev}
+                  value={
+                    currentLiabilities.prev.deferredTaxLiabilities || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      deferredTaxLiabilities_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        deferredTaxLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.deferredTaxLiabilities_current}
+                  value={
+                    currentLiabilities.current.deferredTaxLiabilities ||
+                    undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      deferredTaxLiabilities_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        deferredTaxLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
@@ -930,21 +926,27 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">賞与引当金</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.bonusReserve_prev}
+                  value={currentLiabilities.prev.bonusReserve || undefined}
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      bonusReserve_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        bonusReserve: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.bonusReserve_current}
+                  value={currentLiabilities.current.bonusReserve || undefined}
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      bonusReserve_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        bonusReserve: value || 0,
+                      },
                     }))
                   }
                 />
@@ -953,21 +955,31 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">退職給引当金</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.retirementBenefits_prev}
+                  value={
+                    currentLiabilities.prev.retirementBenefits || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      retirementBenefits_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        retirementBenefits: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.retirementBenefits_current}
+                  value={
+                    currentLiabilities.current.retirementBenefits || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      retirementBenefits_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        retirementBenefits: value || 0,
+                      },
                     }))
                   }
                 />
@@ -976,21 +988,32 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">その他流動負債</Label>
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.otherCurrentLiabilities_prev}
+                  value={
+                    currentLiabilities.prev.otherCurrentLiabilities || undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      otherCurrentLiabilities_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        otherCurrentLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={currentLiabilities.otherCurrentLiabilities_current}
+                  value={
+                    currentLiabilities.current.otherCurrentLiabilities ||
+                    undefined
+                  }
                   onValueChange={(value) =>
-                    setCurrentLiabilities((prev) => ({
+                    updateCurrentLiabilities((prev) => ({
                       ...prev,
-                      otherCurrentLiabilities_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        otherCurrentLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
@@ -998,10 +1021,10 @@ export const CashFlowInput = () => {
               <div className="grid grid-cols-3 gap-4 items-center ps-2 font-semibold">
                 <Label className="text-sm">流動負債計</Label>
                 <div className="text-right py-2 px-3">
-                  {totalCurrentLiabilitiesPrev.toLocaleString()}
+                  {totalCurrentLiabilities.prev.toLocaleString()}
                 </div>
                 <div className="text-right py-2 px-3">
-                  {totalCurrentLiabilitiesCurrent.toLocaleString()}
+                  {totalCurrentLiabilities.current.toLocaleString()}
                 </div>
               </div>
               <hr className="mt-8" />
@@ -1015,21 +1038,29 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">長期借入金･社債</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.longTermBorrowings_prev}
+                  value={fixedLiabilities.prev.longTermBorrowings || undefined}
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      longTermBorrowings_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        longTermBorrowings: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.longTermBorrowings_current}
+                  value={
+                    fixedLiabilities.current.longTermBorrowings || undefined
+                  }
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      longTermBorrowings_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        longTermBorrowings: value || 0,
+                      },
                     }))
                   }
                 />
@@ -1038,21 +1069,31 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">繰延税金負債</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.deferredTaxLiabilities_prev}
+                  value={
+                    fixedLiabilities.prev.deferredTaxLiabilities || undefined
+                  }
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      deferredTaxLiabilities_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        deferredTaxLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.deferredTaxLiabilities_current}
+                  value={
+                    fixedLiabilities.current.deferredTaxLiabilities || undefined
+                  }
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      deferredTaxLiabilities_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        deferredTaxLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
@@ -1061,21 +1102,29 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">退職給引当金</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.retirementBenefits_prev}
+                  value={fixedLiabilities.prev.retirementBenefits || undefined}
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      retirementBenefits_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        retirementBenefits: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.retirementBenefits_current}
+                  value={
+                    fixedLiabilities.current.retirementBenefits || undefined
+                  }
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      retirementBenefits_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        retirementBenefits: value || 0,
+                      },
                     }))
                   }
                 />
@@ -1084,21 +1133,31 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">その他固定負債</Label>
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.otherFixedLiabilities_prev}
+                  value={
+                    fixedLiabilities.prev.otherFixedLiabilities || undefined
+                  }
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      otherFixedLiabilities_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        otherFixedLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={fixedLiabilities.otherFixedLiabilities_current}
+                  value={
+                    fixedLiabilities.current.otherFixedLiabilities || undefined
+                  }
                   onValueChange={(value) =>
-                    setFixedLiabilities((prev) => ({
+                    updateFixedLiabilities((prev) => ({
                       ...prev,
-                      otherFixedLiabilities_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        otherFixedLiabilities: value || 0,
+                      },
                     }))
                   }
                 />
@@ -1115,10 +1174,10 @@ export const CashFlowInput = () => {
               <div className="grid grid-cols-3 gap-4 items-center ps-2 font-semibold">
                 <Label className="text-sm">負債合計</Label>
                 <div className="text-right py-2 px-3">
-                  {totalLiabilitiesPrev.toLocaleString()}
+                  {totalLiabilities.prev.toLocaleString()}
                 </div>
                 <div className="text-right py-2 px-3">
-                  {totalLiabilitiesCurrent.toLocaleString()}
+                  {totalLiabilities.current.toLocaleString()}
                 </div>
               </div>
 
@@ -1133,21 +1192,27 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">資本金･資本剰余金</Label>
                 <NumericInput
                   className="text-right"
-                  value={equity.capitalStock_prev}
+                  value={equity.prev.capitalStock || undefined}
                   onValueChange={(value) =>
-                    setEquity((prev) => ({
+                    updateEquity((prev) => ({
                       ...prev,
-                      capitalStock_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        capitalStock: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={equity.capitalStock_current}
+                  value={equity.current.capitalStock || undefined}
                   onValueChange={(value) =>
-                    setEquity((prev) => ({
+                    updateEquity((prev) => ({
                       ...prev,
-                      capitalStock_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        capitalStock: value || 0,
+                      },
                     }))
                   }
                 />
@@ -1156,21 +1221,27 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">利益剰余金</Label>
                 <NumericInput
                   className="text-right"
-                  value={equity.retainedEarnings_prev}
+                  value={equity.prev.retainedEarnings || undefined}
                   onValueChange={(value) =>
-                    setEquity((prev) => ({
+                    updateEquity((prev) => ({
                       ...prev,
-                      retainedEarnings_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        retainedEarnings: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={equity.retainedEarnings_current}
+                  value={equity.current.retainedEarnings || undefined}
                   onValueChange={(value) =>
-                    setEquity((prev) => ({
+                    updateEquity((prev) => ({
                       ...prev,
-                      retainedEarnings_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        retainedEarnings: value || 0,
+                      },
                     }))
                   }
                 />
@@ -1179,21 +1250,27 @@ export const CashFlowInput = () => {
                 <Label className="text-sm">繰延ヘッジ損益</Label>
                 <NumericInput
                   className="text-right"
-                  value={equity.treasuryStock_prev}
+                  value={equity.prev.treasuryStock || undefined}
                   onValueChange={(value) =>
-                    setEquity((prev) => ({
+                    updateEquity((prev) => ({
                       ...prev,
-                      treasuryStock_prev: value || 0,
+                      prev: {
+                        ...prev.prev,
+                        treasuryStock: value || 0,
+                      },
                     }))
                   }
                 />
                 <NumericInput
                   className="text-right"
-                  value={equity.treasuryStock_current}
+                  value={equity.current.treasuryStock || undefined}
                   onValueChange={(value) =>
-                    setEquity((prev) => ({
+                    updateEquity((prev) => ({
                       ...prev,
-                      treasuryStock_current: value || 0,
+                      current: {
+                        ...prev.current,
+                        treasuryStock: value || 0,
+                      },
                     }))
                   }
                 />
@@ -1201,51 +1278,51 @@ export const CashFlowInput = () => {
               <div className="grid grid-cols-3 gap-4 items-center ps-2 font-semibold">
                 <Label className="text-sm">資本合計</Label>
                 <div className="text-right py-2 px-3">
-                  {totalEquityPrev.toLocaleString()}
+                  {totalEquity.prev.toLocaleString()}
                 </div>
                 <div className="text-right py-2 px-3">
-                  {totalEquityCurrent.toLocaleString()}
+                  {totalEquity.current.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 font-semibold">
                 <Label className="text-sm">負債･資本合計</Label>
                 <div className="text-right py-2 px-3">
-                  {totalLiabilitiesAndEquityPrev.toLocaleString()}
+                  {totalLiabilitiesAndEquity.prev.toLocaleString()}
                 </div>
                 <div className="text-right py-2 px-3">
-                  {totalLiabilitiesAndEquityCurrent.toLocaleString()}
+                  {totalLiabilitiesAndEquity.current.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0 pt-4 border-t">
                 <Label className="text-sm">貸借バランスチェック</Label>
                 <div
                   className={`text-sm text-right py-2 px-3 ${
-                    isBalancedPrev ? "text-green-600" : "text-red-600"
+                    isBalanced.prev ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {isBalancedPrev ? "OK" : "NG"}
+                  {isBalanced.prev ? "OK" : "NG"}
                 </div>
                 <div
                   className={`text-sm text-right py-2 px-3 ${
-                    isBalancedCurrent ? "text-green-600" : "text-red-600"
+                    isBalanced.current ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {isBalancedCurrent ? "OK" : "NG"}
+                  {isBalanced.current ? "OK" : "NG"}
                 </div>
               </div>
-              {(!isBalancedPrev || !isBalancedCurrent) && (
+              {(!isBalanced.prev || !isBalanced.current) && (
                 <div className="grid grid-cols-3 gap-4 items-center ps-2 text-sm">
                   <Label className="text-sm">差異</Label>
                   <div className="text-sm text-right py-1 px-3">
-                    {!isBalancedPrev &&
+                    {!isBalanced.prev &&
                       (
-                        totalAssetsPrev - totalLiabilitiesAndEquityPrev
+                        totalAssetsPrev - totalLiabilitiesAndEquity.prev
                       ).toLocaleString()}
                   </div>
                   <div className="text-sm text-right py-1 px-3">
-                    {!isBalancedCurrent &&
+                    {!isBalanced.current &&
                       (
-                        totalAssetsCurrent - totalLiabilitiesAndEquityCurrent
+                        totalAssetsCurrent - totalLiabilitiesAndEquity.current
                       ).toLocaleString()}
                   </div>
                 </div>
@@ -1262,9 +1339,9 @@ export const CashFlowInput = () => {
                 </Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.pretaxIncome}
+                  value={incomeStatement.pretaxIncome || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       pretaxIncome: value || 0,
                     }))
@@ -1277,9 +1354,9 @@ export const CashFlowInput = () => {
                 </Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.netIncome}
+                  value={incomeStatement.netIncome || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       netIncome: value || 0,
                     }))
@@ -1292,9 +1369,9 @@ export const CashFlowInput = () => {
                 </Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.depreciation}
+                  value={incomeStatement.depreciation || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       depreciation: value || 0,
                     }))
@@ -1305,9 +1382,9 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">受取利息･配当金</Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.interestIncome}
+                  value={incomeStatement.interestIncome || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       interestIncome: value || 0,
                     }))
@@ -1318,9 +1395,9 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">支払利息</Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.interestExpense}
+                  value={incomeStatement.interestExpense || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       interestExpense: value || 0,
                     }))
@@ -1331,9 +1408,9 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">有価証券売却益</Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.securitiesGain}
+                  value={incomeStatement.securitiesGain || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       securitiesGain: value || 0,
                     }))
@@ -1346,9 +1423,9 @@ export const CashFlowInput = () => {
                 </Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.securitiesLoss}
+                  value={incomeStatement.securitiesLoss || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       securitiesLoss: value || 0,
                     }))
@@ -1359,9 +1436,9 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">固定資産売却益</Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.fixedAssetGain}
+                  value={incomeStatement.fixedAssetGain || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       fixedAssetGain: value || 0,
                     }))
@@ -1374,9 +1451,9 @@ export const CashFlowInput = () => {
                 </Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={incomeStatement.fixedAssetLoss}
+                  value={incomeStatement.fixedAssetLoss || undefined}
                   onValueChange={(value) =>
-                    setIncomeStatement((prev) => ({
+                    updateIncomeStatement((prev) => ({
                       ...prev,
                       fixedAssetLoss: value || 0,
                     }))
@@ -1393,9 +1470,9 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">配当金の当期支出額</Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={appropriation.dividends}
+                  value={appropriation.dividends || undefined}
                   onValueChange={(value) =>
-                    setAppropriation((prev) => ({
+                    updateAppropriation((prev) => ({
                       ...prev,
                       dividends: value || 0,
                     }))
@@ -1408,9 +1485,9 @@ export const CashFlowInput = () => {
                 </Label>
                 <NumericInput
                   className="col-start-3 text-right"
-                  value={appropriation.executiveBonuses}
+                  value={appropriation.executiveBonuses || undefined}
                   onValueChange={(value) =>
-                    setAppropriation((prev) => ({
+                    updateAppropriation((prev) => ({
                       ...prev,
                       executiveBonuses: value || 0,
                     }))
@@ -1432,25 +1509,41 @@ export const CashFlowInput = () => {
               </h4>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">税引前当期純利益</Label>
-                <div className="text-right py-2 px-3">
-                  {incomeStatement.pretaxIncome.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    incomeStatement.pretaxIncome
+                  )}`}
+                >
+                  {(incomeStatement.pretaxIncome || 0).toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">減価償却費</Label>
-                <div className="text-right py-2 px-3">
-                  {incomeStatement.depreciation.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    incomeStatement.depreciation
+                  )}`}
+                >
+                  {(incomeStatement.depreciation || 0).toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">退職給引当金</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    retirementBenefitsChange
+                  )}`}
+                >
                   {retirementBenefitsChange.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">賞与引当金</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    bonusReserveChange
+                  )}`}
+                >
                   {bonusReserveChange.toLocaleString()}
                 </div>
               </div>
@@ -1458,37 +1551,57 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   受取利息･受取配当金
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    interestIncome
+                  )}`}
+                >
                   {interestIncome.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">支払利息</Label>
-                <div className="text-right py-2 px-3">
-                  {incomeStatement.interestExpense.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    incomeStatement.interestExpense
+                  )}`}
+                >
+                  {(incomeStatement.interestExpense || 0).toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">
                   有価証券売却損益・評価損
                 </Label>
-                <div className="text-right py-2 px-3">
-                  {securities.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    securitiesGainLoss
+                  )}`}
+                >
+                  {securitiesGainLoss.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">
                   固定資産売却損益・廃棄損
                 </Label>
-                <div className="text-right py-2 px-3">
-                  {fixedAsset.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    fixedAssetGainLoss
+                  )}`}
+                >
+                  {fixedAssetGainLoss.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">
                   繰延ヘッジ損益の増減
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    treasuryStockChange
+                  )}`}
+                >
                   {treasuryStockChange.toLocaleString()}
                 </div>
               </div>
@@ -1496,7 +1609,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   売上債権減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    receivablesChange
+                  )}`}
+                >
                   {receivablesChange.toLocaleString()}
                 </div>
               </div>
@@ -1504,7 +1621,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   棚卸資産減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    inventoryChange
+                  )}`}
+                >
                   {inventoryChange.toLocaleString()}
                 </div>
               </div>
@@ -1512,7 +1633,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   その他流動資産減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    otherCurrentAssetsChange
+                  )}`}
+                >
                   {otherCurrentAssetsChange.toLocaleString()}
                 </div>
               </div>
@@ -1520,7 +1645,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   繰延資産減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    deferredAssetsChange
+                  )}`}
+                >
                   {deferredAssetsChange.toLocaleString()}
                 </div>
               </div>
@@ -1528,7 +1657,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   仕入債務増加 (△減少)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    accountsPayableChange
+                  )}`}
+                >
                   {accountsPayableChange.toLocaleString()}
                 </div>
               </div>
@@ -1536,7 +1669,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   その他の流動負債増加 (△減少)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    otherCurrentLiabilitiesChange
+                  )}`}
+                >
                   {otherCurrentLiabilitiesChange.toLocaleString()}
                 </div>
               </div>
@@ -1544,19 +1681,31 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   その他の固定負債増加 (△減少)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    otherFixedLiabilitiesChange
+                  )}`}
+                >
                   {otherFixedLiabilitiesChange.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">役員賞与</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    executiveBonuses
+                  )}`}
+                >
                   {executiveBonuses.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-4 mb-0">
                 <Label className="col-span-2 text-sm">小 計</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    operatingSubtotal1
+                  )}`}
+                >
                   {operatingSubtotal1.toLocaleString()}
                 </div>
               </div>
@@ -1565,32 +1714,52 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   利息及び配当金の受取額
                 </Label>
-                <div className="text-right py-2 px-3">
-                  {incomeStatement.interestIncome.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    incomeStatement.interestIncome
+                  )}`}
+                >
+                  {(incomeStatement.interestIncome || 0).toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">利息の支払額</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    interestExpense
+                  )}`}
+                >
                   {interestExpense.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">法人税等の支払額</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    incomeTaxesPaid
+                  )}`}
+                >
                   {incomeTaxesPaid.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-4 mb-0">
                 <Label className="col-span-2 text-sm">小 計</Label>
-                <div className="text-right py-2 px-3">
-                  {operatingSubtotal2.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    operatingSubtotal2
+                  )}`}
+                >
+                  {(operatingSubtotal2 || 0).toLocaleString()}
                 </div>
               </div>
               <hr className="mt-4" />
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">営業活動によるCF</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    totalOperatingCF
+                  )}`}
+                >
                   {totalOperatingCF.toLocaleString()}
                 </div>
               </div>
@@ -1602,7 +1771,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   有形固定資産の減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    tangibleAssetsChange
+                  )}`}
+                >
                   {tangibleAssetsChange.toLocaleString()}
                 </div>
               </div>
@@ -1610,7 +1783,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   無形固定資産の減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    intangibleAssetsChange
+                  )}`}
+                >
                   {intangibleAssetsChange.toLocaleString()}
                 </div>
               </div>
@@ -1618,7 +1795,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   有価証券の減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    securitiesChange
+                  )}`}
+                >
                   {securitiesChange.toLocaleString()}
                 </div>
               </div>
@@ -1626,7 +1807,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   貸付金の減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    loansChange
+                  )}`}
+                >
                   {loansChange.toLocaleString()}
                 </div>
               </div>
@@ -1634,14 +1819,22 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   その他の固定資産の減少 (△増加)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    otherFixedAssetsChange
+                  )}`}
+                >
                   {otherFixedAssetsChange.toLocaleString()}
                 </div>
               </div>
               <hr className="mt-4" />
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">投資活動によるCF</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    totalInvestingCF
+                  )}`}
+                >
                   {totalInvestingCF.toLocaleString()}
                 </div>
               </div>
@@ -1653,7 +1846,11 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   短期借入金の増加 (△減少)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    shortTermBorrowingsChange
+                  )}`}
+                >
                   {shortTermBorrowingsChange.toLocaleString()}
                 </div>
               </div>
@@ -1661,26 +1858,42 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   長期借入金･社債の増加 (△減少)
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    longTermBorrowingsChange
+                  )}`}
+                >
                   {longTermBorrowingsChange.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">増資</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    capitalIncrease
+                  )}`}
+                >
                   {capitalIncrease.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">支払配当金</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    dividendsPaid
+                  )}`}
+                >
                   {dividendsPaid.toLocaleString()}
                 </div>
               </div>
               <hr className="mt-4" />
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">財務活動によるCF</Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    totalFinancingCF
+                  )}`}
+                >
                   {totalFinancingCF.toLocaleString()}
                 </div>
               </div>
@@ -1690,20 +1903,32 @@ export const CashFlowInput = () => {
                 <Label className="col-span-2 text-sm">
                   現預金残高の増加（△減少）
                 </Label>
-                <div className="text-right py-2 px-3">
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    cashIncrease
+                  )}`}
+                >
                   {cashIncrease.toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">期首現預金残高</Label>
-                <div className="text-right py-2 px-3">
-                  {currentAssets.cash_prev.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    currentAssets.prev.cash
+                  )}`}
+                >
+                  {(currentAssets.prev.cash || 0).toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0">
                 <Label className="col-span-2 text-sm">期末現預金残高</Label>
-                <div className="text-right py-2 px-3">
-                  {currentAssets.cash_current.toLocaleString()}
+                <div
+                  className={`text-right py-2 px-3 ${getValueColorClass(
+                    currentAssets.current.cash
+                  )}`}
+                >
+                  {(currentAssets.current.cash || 0).toLocaleString()}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 items-center ps-2 mb-0 pt-4 border-t">
